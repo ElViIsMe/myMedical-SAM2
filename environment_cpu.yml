@@ -3,7 +3,7 @@ channels:
   - conda-forge
   - defaults
 dependencies:
-<<<<<<< cursor/enable-cpu-only-support-for-medical-sam2-4b8c
+cursor/enable-cpu-only-support-for-medical-sam2-4b8c
   - python=3.10.12
   - pip
   - numpy=1.24.3
@@ -241,5 +241,5 @@ dependencies:
       - websocket-client==1.8.0
       - widgetsnbextension==4.0.11
       - wrapt==1.16.0
->>>>>>> main
+main
       - yacs==0.1.8
