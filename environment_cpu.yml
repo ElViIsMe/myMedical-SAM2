@@ -4,6 +4,7 @@ channels:
   - defaults
 dependencies:
 cursor/enable-cpu-only-support-for-medical-sam2-4b8c
+main
   - python=3.10.12
   - pip
   - numpy=1.24.3
@@ -45,6 +46,8 @@ cursor/enable-cpu-only-support-for-medical-sam2-4b8c
       - tensorboardx==2.6.2.2
       - torchsummary==1.5.1
       - tqdm==4.66.4
+cursor/enable-cpu-only-support-for-medical-sam2-4b8c
+      - yacs==0.1.8
   - _libgcc_mutex=0.1=main
   - _openmp_mutex=5.1=1_gnu
   - asttokens=2.4.1=pyhd8ed1ab_0
@@ -242,3 +245,4 @@ cursor/enable-cpu-only-support-for-medical-sam2-4b8c
       - wrapt==1.16.0
 main
       - yacs==0.1.8
+main
