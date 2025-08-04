@@ -16,14 +16,29 @@ Medical SAM2 ist ein fortschrittliches Segmentierungsmodell für medizinische Bi
 
 ### **Option A: CPU-Only (empfohlen für Computer ohne NVIDIA GPU)**
 
+#### **Automatische Installation (empfohlen):**
 ```bash
 # Repository klonen
 git clone https://github.com/MedicineToken/Medical-SAM2.git
 cd Medical-SAM2
 
-# CPU-Only Umgebung installieren
+# Automatisches Installationsskript ausführen
+chmod +x install_cpu.sh
+./install_cpu.sh
+```
+
+#### **Manuelle Installation:**
+```bash
+# Repository klonen
+git clone https://github.com/MedicineToken/Medical-SAM2.git
+cd Medical-SAM2
+
+# CPU-Only Umgebung installieren (Python 3.10)
 conda env create -f environment_cpu.yml
 conda activate medsam2_cpu
+
+# PyTorch CPU-Version mit offiziellem Befehl installieren
+pip install torch==2.4.0+cpu torchvision==0.19.0+cpu torchaudio==2.4.0+cpu -f https://download.pytorch.org/whl/cpu/torch_stable.html
 
 # SAM2 Checkpoints herunterladen
 bash download_ckpts.sh
@@ -319,6 +334,26 @@ python train_3d.py \
 
 ## ⚠️ **Häufige Probleme und Lösungen**
 
+### **Problem: Python 3.12 Kompatibilitätsprobleme**
+**Lösung:**
+```bash
+# Verwenden Sie Python 3.10 für beste Kompatibilität
+conda env remove -n medsam2_cpu
+conda env create -f environment_cpu.yml  # Verwendet jetzt Python 3.10
+conda activate medsam2_cpu
+```
+
+### **Problem: PyTorch Installation schlägt fehl**
+**Lösung:**
+```bash
+# Verwenden Sie den offiziellen PyTorch CPU-Befehl
+conda activate medsam2_cpu
+pip install torch==2.4.0+cpu torchvision==0.19.0+cpu torchaudio==2.4.0+cpu -f https://download.pytorch.org/whl/cpu/torch_stable.html
+
+# Überprüfen Sie die Installation
+python -c "import torch; print(torch.__version__)"
+```
+
 ### **Problem: "CUDA out of memory"**
 **Lösung:**
 ```bash
@@ -332,6 +367,20 @@ python train_3d.py \
 -gpu False
 ```
 
+### **Problem: "ModuleNotFoundError" bei wichtigen Paketen**
+**Lösung:**
+```bash
+# Fehlende Pakete nachinstallieren
+conda activate medsam2_cpu
+pip install nibabel monai hydra-core omegaconf
+
+# Alle Abhängigkeiten überprüfen
+python -c "
+import torch, torchvision, numpy, PIL, nibabel, monai
+print('✅ Alle wichtigen Pakete verfügbar!')
+"
+```
+
 ### **Problem: "NIfTI-Datei kann nicht geladen werden"**
 **Lösung:**
 ```python
@@ -340,8 +389,24 @@ import nibabel as nib
 try:
     img = nib.load('ihre_datei.nii.gz')
     print("Datei erfolgreich geladen")
+    print(f"Shape: {img.shape}, Dtype: {img.get_fdata().dtype}")
 except Exception as e:
     print(f"Fehler: {e}")
+    # Versuchen Sie verschiedene Dateierweiterungen
+    # .nii, .nii.gz, .hdr/.img
+```
+
+### **Problem: Conda-Umgebung kann nicht erstellt werden**
+**Lösung:**
+```bash
+# Conda aktualisieren und Cache leeren
+conda update conda
+conda clean --all
+
+# Umgebung mit spezifischer Python-Version erstellen
+conda create -n medsam2_cpu python=3.10
+conda activate medsam2_cpu
+pip install -r requirements_cpu.txt  # Falls verfügbar
 ```
 
 ### **Problem: "Schlechte Segmentierungsergebnisse"**
@@ -350,6 +415,7 @@ except Exception as e:
 2. **Bessere Vorverarbeitung:** Normalisierung anpassen
 3. **Hyperparameter-Tuning:** Learning Rate, Batch Size anpassen
 4. **Transfer Learning:** Von vortrainierten Modellen starten
+5. **Python 3.10:** Verwenden Sie die empfohlene Python-Version
 
 ---
 
