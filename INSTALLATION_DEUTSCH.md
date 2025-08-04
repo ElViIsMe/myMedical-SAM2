@@ -23,8 +23,8 @@ conda activate medsam2_cpu
 
 ### **Schritt 2: PyTorch CPU installieren**
 ```bash
-# Offizieller PyTorch CPU-Befehl (WICHTIG!)
-pip install torch==2.4.0+cpu torchvision==0.19.0+cpu torchaudio==2.4.0+cpu -f https://download.pytorch.org/whl/cpu/torch_stable.html
+# Aktueller PyTorch CPU-Befehl (WICHTIG!)
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
 ```
 
 ### **Schritt 3: Installation testen**
@@ -52,8 +52,8 @@ conda install pytorch  # Kann CUDA-Version installieren
 
 ### **✅ RICHTIG verwenden:**
 ```bash
-# ✅ KORREKT - offizielle CPU-Installation
-pip install torch==2.4.0+cpu torchvision==0.19.0+cpu torchaudio==2.4.0+cpu -f https://download.pytorch.org/whl/cpu/torch_stable.html
+# ✅ KORREKT - aktuelle CPU-Installation
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
 ```
 
 ## 🐍 **Python-Version**
@@ -110,7 +110,7 @@ python train_3d.py -net sam2 -exp_name Mein_Test -sam_ckpt ./checkpoints/sam2_hi
    ```bash
    conda activate medsam2_cpu
    pip uninstall torch torchvision torchaudio
-   pip install torch==2.4.0+cpu torchvision==0.19.0+cpu torchaudio==2.4.0+cpu -f https://download.pytorch.org/whl/cpu/torch_stable.html
+   pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
    ```
 
 3. **Vollständige Anleitung lesen:** `ANLEITUNG_DEUTSCH.md`

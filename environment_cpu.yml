@@ -17,7 +17,7 @@ dependencies:
   - ipython
   - pip:
       # PyTorch CPU-only installation (official command)
-      # Note: Install PyTorch separately with: pip install torch==2.4.0+cpu torchvision==0.19.0+cpu torchaudio==2.4.0+cpu -f https://download.pytorch.org/whl/cpu/torch_stable.html
+      # Note: Install PyTorch separately with: pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
       - acvl-utils==0.2
       - antlr4-python3-runtime==4.9.3
       - argparse==1.4.0

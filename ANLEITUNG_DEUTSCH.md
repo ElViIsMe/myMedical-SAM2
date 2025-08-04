@@ -37,8 +37,8 @@ cd Medical-SAM2
 conda env create -f environment_cpu.yml
 conda activate medsam2_cpu
 
-# PyTorch CPU-Version mit offiziellem Befehl installieren
-pip install torch==2.4.0+cpu torchvision==0.19.0+cpu torchaudio==2.4.0+cpu -f https://download.pytorch.org/whl/cpu/torch_stable.html
+# PyTorch CPU-Version mit aktuellem offiziellen Befehl installieren
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
 
 # SAM2 Checkpoints herunterladen
 bash download_ckpts.sh
@@ -346,9 +346,9 @@ conda activate medsam2_cpu
 ### **Problem: PyTorch Installation schlägt fehl**
 **Lösung:**
 ```bash
-# Verwenden Sie den offiziellen PyTorch CPU-Befehl
+# Verwenden Sie den aktuellen PyTorch CPU-Befehl
 conda activate medsam2_cpu
-pip install torch==2.4.0+cpu torchvision==0.19.0+cpu torchaudio==2.4.0+cpu -f https://download.pytorch.org/whl/cpu/torch_stable.html
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
 
 # Überprüfen Sie die Installation
 python -c "import torch; print(torch.__version__)"
