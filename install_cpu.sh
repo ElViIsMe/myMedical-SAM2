@@ -39,15 +39,15 @@ fi
 
 echo "✅ Umgebung aktiviert."
 
-# Installiere PyTorch CPU-Version mit offiziellem Befehl
+# Installiere PyTorch CPU-Version mit aktuellem Befehl
 echo "🔥 Installiere PyTorch CPU-Only Version..."
-pip install torch==2.4.0+cpu torchvision==0.19.0+cpu torchaudio==2.4.0+cpu -f https://download.pytorch.org/whl/cpu/torch_stable.html
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
 
 if [ $? -ne 0 ]; then
     echo "❌ Fehler bei der PyTorch Installation."
     echo "💡 Versuchen Sie manuell:"
     echo "   conda activate medsam2_cpu"
-    echo "   pip install torch==2.4.0+cpu torchvision==0.19.0+cpu torchaudio==2.4.0+cpu -f https://download.pytorch.org/whl/cpu/torch_stable.html"
+    echo "   pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu"
     exit 1
 fi
 
