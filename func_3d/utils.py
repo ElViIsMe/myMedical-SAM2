@@ -17,11 +17,27 @@ from torch.autograd import Function
 import cfg
 
 args = cfg.parse_args()
-device = torch.device('cuda', args.gpu_device)
+# Auto-detect device based on GPU availability and user preference
+if args.gpu and torch.cuda.is_available():
+    device = torch.device('cuda', args.gpu_device)
+    device_type = "cuda"
+else:
+    device = torch.device('cpu')
+    device_type = "cpu"
+    print("Using CPU device (GPU not available or disabled)")
 
 def get_network(args, net, use_gpu=True, gpu_device = 0, distribution = True):
     """ return given network
     """
+
+    # Determine device type based on GPU availability and user preference
+    if use_gpu and torch.cuda.is_available():
+        target_device = "cuda"
+        device_obj = torch.device('cuda', gpu_device)
+    else:
+        target_device = "cpu"
+        device_obj = torch.device('cpu')
+        use_gpu = False  # Override use_gpu if CUDA not available
 
     if net == 'sam2':
         from sam2_train.build_sam import build_sam2_video_predictor
@@ -29,13 +45,13 @@ def get_network(args, net, use_gpu=True, gpu_device = 0, distribution = True):
         sam2_checkpoint = args.sam_ckpt
         model_cfg = args.sam_config
 
-        net = build_sam2_video_predictor(config_file=model_cfg, ckpt_path=sam2_checkpoint, mode=None)
+        net = build_sam2_video_predictor(config_file=model_cfg, ckpt_path=sam2_checkpoint, mode=None, device=target_device)
     else:
         print('the network name you have entered is not supported yet')
         sys.exit()
 
-    if use_gpu:
-        net = net.to(device=gpu_device)
+    # Move model to appropriate device
+    net = net.to(device=device_obj)
 
     return net
 

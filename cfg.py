@@ -1,4 +1,5 @@
 import argparse
+import torch
 
 
 def parse_args():    
@@ -12,7 +13,9 @@ def parse_args():
     parser.add_argument('-prompt_freq', type=int, default=2, help='frequency of giving prompt in 3D images')
     parser.add_argument('-pretrain', type=str, default=None, help='path of pretrain weights')
     parser.add_argument('-val_freq',type=int,default=5,help='interval between each validation')
-    parser.add_argument('-gpu', type=bool, default=True, help='use gpu or not')
+    # Auto-detect GPU availability, default to CPU if no GPU available
+    default_gpu = torch.cuda.is_available()
+    parser.add_argument('-gpu', type=bool, default=default_gpu, help='use gpu or not (auto-detected)')
     parser.add_argument('-gpu_device', type=int, default=0, help='use which gpu')
     parser.add_argument('-image_size', type=int, default=1024, help='image_size')
     parser.add_argument('-out_size', type=int, default=1024, help='output_size')

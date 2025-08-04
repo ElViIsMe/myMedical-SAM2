@@ -24,17 +24,27 @@ from func_2d.utils import *
 
 
 def main():
-    # use bfloat16 for the entire work
-    torch.autocast(device_type="cuda", dtype=torch.bfloat16).__enter__()
-
-    if torch.cuda.get_device_properties(0).major >= 8:
-        # turn on tfloat32 for Ampere GPUs (https://pytorch.org/docs/stable/notes/cuda.html#tensorfloat-32-tf32-on-ampere-devices)
-        torch.backends.cuda.matmul.allow_tf32 = True
-        torch.backends.cudnn.allow_tf32 = True
-
-
     args = cfg.parse_args()
-    GPUdevice = torch.device('cuda', args.gpu_device)
+    
+    # Determine device based on GPU availability and user preference
+    if args.gpu and torch.cuda.is_available():
+        GPUdevice = torch.device('cuda', args.gpu_device)
+        device_type = "cuda"
+        # use bfloat16 for CUDA
+        torch.autocast(device_type="cuda", dtype=torch.bfloat16).__enter__()
+        
+        if torch.cuda.get_device_properties(0).major >= 8:
+            # turn on tfloat32 for Ampere GPUs (https://pytorch.org/docs/stable/notes/cuda.html#tensorfloat-32-tf32-on-ampere-devices)
+            torch.backends.cuda.matmul.allow_tf32 = True
+            torch.backends.cudnn.allow_tf32 = True
+    else:
+        GPUdevice = torch.device('cpu')
+        device_type = "cpu"
+        # use float32 for CPU
+        torch.autocast(device_type="cpu", dtype=torch.float32).__enter__()
+        print("Running on CPU (GPU not available or disabled)")
+        # Disable GPU flag if CUDA not available
+        args.gpu = False
 
     net = get_network(args, args.net, use_gpu=args.gpu, gpu_device=GPUdevice, distribution = args.distributed)
 

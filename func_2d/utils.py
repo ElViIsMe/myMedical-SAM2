@@ -36,7 +36,14 @@ import pandas as pd
 
 
 args = cfg.parse_args()
-device = torch.device('cuda', args.gpu_device)
+# Auto-detect device based on GPU availability and user preference
+if args.gpu and torch.cuda.is_available():
+    device = torch.device('cuda', args.gpu_device)
+    device_type = "cuda"
+else:
+    device = torch.device('cpu')
+    device_type = "cpu"
+    print("Using CPU device (GPU not available or disabled)")
 
 
 
@@ -44,29 +51,46 @@ def get_network(args, net, use_gpu=True, gpu_device = 0, distribution = True):
     """ return given network
     """
 
+    # Determine device type based on GPU availability and user preference
+    if use_gpu and torch.cuda.is_available():
+        target_device = "cuda"
+        device_obj = torch.device('cuda', gpu_device)
+    else:
+        target_device = "cpu"
+        device_obj = torch.device('cpu')
+        use_gpu = False  # Override use_gpu if CUDA not available
 
     if net == 'sam2':
         from sam2_train.build_sam import build_sam2
         from sam2_train.sam2_image_predictor import SAM2ImagePredictor
-        torch.autocast(device_type="cuda", dtype=torch.bfloat16).__enter__()
-        if torch.cuda.get_device_properties(0).major >= 8:
-            # turn on tfloat32 for Ampere GPUs (https://pytorch.org/docs/stable/notes/cuda.html#tensorfloat-32-tf32-on-ampere-devices)
-            torch.backends.cuda.matmul.allow_tf32 = True
-            torch.backends.cudnn.allow_tf32 = True
-        net = build_sam2(args.sam_config, args.sam_ckpt, device="cuda")
-
+        
+        # Use device-specific autocast
+        if target_device == "cuda":
+            torch.autocast(device_type="cuda", dtype=torch.bfloat16).__enter__()
+            if torch.cuda.get_device_properties(0).major >= 8:
+                # turn on tfloat32 for Ampere GPUs (https://pytorch.org/docs/stable/notes/cuda.html#tensorfloat-32-tf32-on-ampere-devices)
+                torch.backends.cuda.matmul.allow_tf32 = True
+                torch.backends.cudnn.allow_tf32 = True
+        else:
+            # For CPU, use float32 autocast
+            torch.autocast(device_type="cpu", dtype=torch.float32).__enter__()
+        
+        net = build_sam2(args.sam_config, args.sam_ckpt, device=target_device)
 
     else:
         print('the network name you have entered is not supported yet')
         sys.exit()
 
-    if use_gpu:
+    if use_gpu and target_device == "cuda":
         #net = net.cuda(device = gpu_device)
         if distribution != 'none':
             net = torch.nn.DataParallel(net,device_ids=[int(id) for id in args.distributed.split(',')])
-            net = net.to(device=gpu_device)
+            net = net.to(device=device_obj)
         else:
-            net = net.to(device=gpu_device)
+            net = net.to(device=device_obj)
+    else:
+        # For CPU usage
+        net = net.to(device=device_obj)
 
     return net
 

@@ -22,13 +22,29 @@ def main():
 
     args = cfg.parse_args()
 
-    GPUdevice = torch.device('cuda', args.gpu_device)
+    # Determine device based on GPU availability and user preference
+    if args.gpu and torch.cuda.is_available():
+        GPUdevice = torch.device('cuda', args.gpu_device)
+        device_type = "cuda"
+        print("Running on CUDA")
+    else:
+        GPUdevice = torch.device('cpu')
+        device_type = "cpu"
+        print("Running on CPU (GPU not available or disabled)")
+        # Disable GPU flag if CUDA not available
+        args.gpu = False
 
     net = get_network(args, args.net, use_gpu=args.gpu, gpu_device=GPUdevice, distribution = args.distributed)
-    net.to(dtype=torch.bfloat16)
+    
+    # Use appropriate precision based on device
+    if device_type == "cuda":
+        net.to(dtype=torch.bfloat16)
+    else:
+        net.to(dtype=torch.float32)
+        
     if args.pretrain:
         print(args.pretrain)
-        weights = torch.load(args.pretrain)
+        weights = torch.load(args.pretrain, map_location=GPUdevice)
         net.load_state_dict(weights,strict=False)
 
     sam_layers = (
@@ -54,12 +70,16 @@ def main():
         optimizer2 = optim.Adam(mem_layers, lr=1e-8, betas=(0.9, 0.999), eps=1e-08, weight_decay=0, amsgrad=False)
     # scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.5) #learning rate decay
 
-    torch.autocast(device_type="cuda", dtype=torch.bfloat16).__enter__()
-
-    if torch.cuda.get_device_properties(0).major >= 8:
-        # turn on tfloat32 for Ampere GPUs (https://pytorch.org/docs/stable/notes/cuda.html#tensorfloat-32-tf32-on-ampere-devices)
-        torch.backends.cuda.matmul.allow_tf32 = True
-        torch.backends.cudnn.allow_tf32 = True
+    # Use device-appropriate autocast and optimizations
+    if device_type == "cuda":
+        torch.autocast(device_type="cuda", dtype=torch.bfloat16).__enter__()
+        
+        if torch.cuda.get_device_properties(0).major >= 8:
+            # turn on tfloat32 for Ampere GPUs (https://pytorch.org/docs/stable/notes/cuda.html#tensorfloat-32-tf32-on-ampere-devices)
+            torch.backends.cuda.matmul.allow_tf32 = True
+            torch.backends.cudnn.allow_tf32 = True
+    else:
+        torch.autocast(device_type="cpu", dtype=torch.float32).__enter__()
 
     args.path_helper = set_log_dir('logs', args.exp_name)
     logger = create_logger(args.path_helper['log_path'])

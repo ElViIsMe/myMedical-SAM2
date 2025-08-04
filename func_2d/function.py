@@ -14,23 +14,31 @@ import pandas as pd
 
 args = cfg.parse_args()
 
-GPUdevice = torch.device('cuda', args.gpu_device)
-pos_weight = torch.ones([1]).cuda(device=GPUdevice)*2
+# Auto-detect device based on GPU availability and user preference
+if args.gpu and torch.cuda.is_available():
+    GPUdevice = torch.device('cuda', args.gpu_device)
+    device_type = "cuda"
+    torch.backends.cudnn.benchmark = True
+else:
+    GPUdevice = torch.device('cpu')
+    device_type = "cpu"
+
+pos_weight = torch.ones([1]).to(device=GPUdevice)*2
 criterion_G = torch.nn.BCEWithLogitsLoss(pos_weight=pos_weight)
 mask_type = torch.float32
-
-torch.backends.cudnn.benchmark = True
 
 
 def train_sam(args, net: nn.Module, optimizer, train_loader, epoch, writer):
     
-    # use bfloat16 for the entire notebook
-    torch.autocast(device_type="cuda", dtype=torch.bfloat16).__enter__()
-
-    if torch.cuda.get_device_properties(0).major >= 8:
-        # turn on tfloat32 for Ampere GPUs (https://pytorch.org/docs/stable/notes/cuda.html#tensorfloat-32-tf32-on-ampere-devices)
-        torch.backends.cuda.matmul.allow_tf32 = True
-        torch.backends.cudnn.allow_tf32 = True
+    # Use device-appropriate autocast
+    if device_type == "cuda":
+        torch.autocast(device_type="cuda", dtype=torch.bfloat16).__enter__()
+        if torch.cuda.get_device_properties(0).major >= 8:
+            # turn on tfloat32 for Ampere GPUs (https://pytorch.org/docs/stable/notes/cuda.html#tensorfloat-32-tf32-on-ampere-devices)
+            torch.backends.cuda.matmul.allow_tf32 = True
+            torch.backends.cudnn.allow_tf32 = True
+    else:
+        torch.autocast(device_type="cpu", dtype=torch.float32).__enter__()
 
     
     # train mode
@@ -86,14 +94,14 @@ def train_sam(args, net: nn.Module, optimizer, train_loader, epoch, writer):
             B = vision_feats[-1].size(1)  # batch size 
             
             if len(memory_bank_list) == 0:
-                vision_feats[-1] = vision_feats[-1] + torch.nn.Parameter(torch.zeros(1, B, net.hidden_dim)).to(device="cuda")
-                vision_pos_embeds[-1] = vision_pos_embeds[-1] + torch.nn.Parameter(torch.zeros(1, B, net.hidden_dim)).to(device="cuda")
+                vision_feats[-1] = vision_feats[-1] + torch.nn.Parameter(torch.zeros(1, B, net.hidden_dim)).to(device=GPUdevice)
+                vision_pos_embeds[-1] = vision_pos_embeds[-1] + torch.nn.Parameter(torch.zeros(1, B, net.hidden_dim)).to(device=GPUdevice)
                 
             else:
                 for element in memory_bank_list:
-                    to_cat_memory.append((element[0]).cuda(non_blocking=True).flatten(2).permute(2, 0, 1)) # maskmem_features
-                    to_cat_memory_pos.append((element[1]).cuda(non_blocking=True).flatten(2).permute(2, 0, 1)) # maskmem_pos_enc
-                    to_cat_image_embed.append((element[3]).cuda(non_blocking=True)) # image_embed
+                    to_cat_memory.append((element[0]).to(device=GPUdevice, non_blocking=True).flatten(2).permute(2, 0, 1)) # maskmem_features
+                    to_cat_memory_pos.append((element[1]).to(device=GPUdevice, non_blocking=True).flatten(2).permute(2, 0, 1)) # maskmem_pos_enc
+                    to_cat_image_embed.append((element[3]).to(device=GPUdevice, non_blocking=True)) # image_embed
 
                 memory_stack_ori = torch.stack(to_cat_memory, dim=0)
                 memory_pos_stack_ori = torch.stack(to_cat_memory_pos, dim=0)
@@ -258,21 +266,22 @@ def train_sam(args, net: nn.Module, optimizer, train_loader, epoch, writer):
 
 def validation_sam(args, val_loader, epoch, net: nn.Module, clean_dir=True):
 
-    # use bfloat16 for the entire notebook
-    torch.autocast(device_type="cuda", dtype=torch.bfloat16).__enter__()
-
-    if torch.cuda.get_device_properties(0).major >= 8:
-        # turn on tfloat32 for Ampere GPUs (https://pytorch.org/docs/stable/notes/cuda.html#tensorfloat-32-tf32-on-ampere-devices)
-        torch.backends.cuda.matmul.allow_tf32 = True
-        torch.backends.cudnn.allow_tf32 = True
-
+    # Use device-appropriate autocast
+    if device_type == "cuda":
+        torch.autocast(device_type="cuda", dtype=torch.bfloat16).__enter__()
+        if torch.cuda.get_device_properties(0).major >= 8:
+            # turn on tfloat32 for Ampere GPUs (https://pytorch.org/docs/stable/notes/cuda.html#tensorfloat-32-tf32-on-ampere-devices)
+            torch.backends.cuda.matmul.allow_tf32 = True
+            torch.backends.cudnn.allow_tf32 = True
+    else:
+        torch.autocast(device_type="cpu", dtype=torch.float32).__enter__()
 
     # eval mode
     net.eval()
 
     n_val = len(val_loader) 
     threshold = (0.1, 0.3, 0.5, 0.7, 0.9)
-    GPUdevice = torch.device('cuda:' + str(args.gpu_device))
+    # Use the global GPUdevice variable
 
     # init
     lossfunc = criterion_G
@@ -317,8 +326,8 @@ def validation_sam(args, val_loader, epoch, net: nn.Module, clean_dir=True):
 
                 """ memory condition """
                 if len(memory_bank_list) == 0:
-                    vision_feats[-1] = vision_feats[-1] + torch.nn.Parameter(torch.zeros(1, B, net.hidden_dim)).to(device="cuda")
-                    vision_pos_embeds[-1] = vision_pos_embeds[-1] + torch.nn.Parameter(torch.zeros(1, B, net.hidden_dim)).to(device="cuda")
+                    vision_feats[-1] = vision_feats[-1] + torch.nn.Parameter(torch.zeros(1, B, net.hidden_dim)).to(device=GPUdevice)
+                    vision_pos_embeds[-1] = vision_pos_embeds[-1] + torch.nn.Parameter(torch.zeros(1, B, net.hidden_dim)).to(device=GPUdevice)
 
                 else:
                     for element in memory_bank_list:

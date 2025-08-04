@@ -21,15 +21,25 @@ We released our pretrain weight [here](https://huggingface.co/jiayuanz3/MedSAM2_
 
 ## 🧐 Requirement
 
- Install the environment:
+### GPU Installation (Original)
+ Install the environment with CUDA support:
 
  ``conda env create -f environment.yml``
 
  ``conda activate medsam2``
 
+### CPU-Only Installation (No NVIDIA GPU required)
+ Install the CPU-only environment for systems without NVIDIA graphics cards:
+
+ ``conda env create -f environment_cpu.yml``
+
+ ``conda activate medsam2_cpu``
+
  You can download SAM2 checkpoint from checkpoints folder:
  
  ``bash download_ckpts.sh``
+
+ **Note:** The system will automatically detect whether GPU is available and use CPU if no CUDA-compatible GPU is found. CPU training will be significantly slower but allows running on any hardware.
 
  Further Note: We tested on the following system environment and you may have to handle some issue due to system difference.
 ```
@@ -50,8 +60,14 @@ Python Version: 3.12.4
  ``unzip REFUGE.zip``
 
  **Step2:** Run the training and validation by:
- 
+
+**For GPU systems:**
 ``python train_2d.py -net sam2 -exp_name REFUGE_MedSAM2 -vis 1 -sam_ckpt ./checkpoints/sam2_hiera_small.pt -sam_config sam2_hiera_s -image_size 1024 -out_size 1024 -b 4 -val_freq 1 -dataset REFUGE -data_path ./data/REFUGE``
+
+**For CPU-only systems (no NVIDIA GPU):**
+``python train_2d.py -net sam2 -exp_name REFUGE_MedSAM2_CPU -vis 1 -sam_ckpt ./checkpoints/sam2_hiera_small.pt -sam_config sam2_hiera_s -image_size 1024 -out_size 1024 -b 1 -val_freq 1 -dataset REFUGE -data_path ./data/REFUGE -gpu False``
+
+*Note: CPU training uses smaller batch size (-b 1) due to memory constraints and will be significantly slower.*
 
  ### 3D case - Abdominal Multiple Organs Segmentation
  
@@ -63,9 +79,27 @@ Python Version: 3.12.4
 
 **Step2:** Run the training and validation by:
 
-
+**For GPU systems:**
  ``python train_3d.py -net sam2 -exp_name BTCV_MedSAM2 -sam_ckpt ./checkpoints/sam2_hiera_small.pt -sam_config sam2_hiera_s -image_size 1024 -val_freq 1 -prompt bbox -prompt_freq 2 -dataset btcv -data_path ./data/btcv``
 
+**For CPU-only systems (no NVIDIA GPU):**
+ ``python train_3d.py -net sam2 -exp_name BTCV_MedSAM2_CPU -sam_ckpt ./checkpoints/sam2_hiera_small.pt -sam_config sam2_hiera_s -image_size 512 -val_freq 1 -prompt bbox -prompt_freq 2 -dataset btcv -data_path ./data/btcv -gpu False``
+
+*Note: CPU training uses smaller image size (-image_size 512) and will be significantly slower than GPU training.*
+
+## 💻 CPU-Only Support
+
+Medical SAM2 now supports CPU-only execution for systems without NVIDIA graphics cards:
+
+- **Automatic Device Detection**: The system automatically detects GPU availability and falls back to CPU if needed
+- **CPU-Optimized Environment**: Use `environment_cpu.yml` for installation without CUDA dependencies
+- **Memory Efficient**: Automatically adjusts batch sizes and precision for CPU constraints
+- **Cross-Platform**: Works on any system with sufficient RAM (8GB+ recommended)
+
+**Performance Notes:**
+- CPU training is 10-50x slower than GPU training depending on the model size
+- Recommended to use smaller batch sizes (1-2) and image sizes (512-768) for CPU
+- Consider using pre-trained models and fine-tuning rather than training from scratch
 
 ## 🚨 News
 - 24-12-04. Our Medical SAM 2 paper was updated on Arxiv with new insights and results
