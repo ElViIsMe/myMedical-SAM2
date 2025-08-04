@@ -31,14 +31,24 @@ class CombinedLoss(nn.Module):
         return self.dice_weight * dice + self.focal_weight * focal
 
 
-GPUdevice = torch.device('cuda', args.gpu_device)
-pos_weight = torch.ones([1]).cuda(device=GPUdevice)*2
+# Auto-detect device based on GPU availability and user preference
+if args.gpu and torch.cuda.is_available():
+    GPUdevice = torch.device('cuda', args.gpu_device)
+    device_type = "cuda"
+    torch.backends.cudnn.benchmark = True
+else:
+    GPUdevice = torch.device('cpu')
+    device_type = "cpu"
+
+pos_weight = torch.ones([1]).to(device=GPUdevice)*2
 criterion_G = torch.nn.BCEWithLogitsLoss(pos_weight=pos_weight)
 paper_loss = CombinedLoss(dice_weight=1 / 21, focal_weight=20 / 21)
 seed = torch.randint(1,11,(1,7))
-
-torch.backends.cudnn.benchmark = True
-scaler = torch.cuda.amp.GradScaler()
+# Use device-appropriate scaler
+if device_type == "cuda":
+    scaler = torch.cuda.amp.GradScaler()
+else:
+    scaler = torch.cpu.amp.GradScaler()  # For CPU compatibility
 max_iterations = settings.EPOCH
 dice_val_best = 0.0
 global_step_best = 0
@@ -62,7 +72,7 @@ def train_sam(args, net: nn.Module, optimizer1, optimizer2, train_loader,
         optimizer2.zero_grad()
     video_length = args.video_length
 
-    GPUdevice = torch.device('cuda:' + str(args.gpu_device))
+    # Use the global GPUdevice variable
     prompt = args.prompt
     prompt_freq = args.prompt_freq
 
